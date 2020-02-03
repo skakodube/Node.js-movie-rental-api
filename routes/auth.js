@@ -4,8 +4,9 @@ const { User } = require("../models/user");
 const _ = require("lodash");
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
+const validate = require("../middleware/validate");
 
-router.post("/", async (req, res) => {
+router.post("/", validate(validateAuth), async (req, res) => {
   const { error } = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -19,7 +20,7 @@ router.post("/", async (req, res) => {
   res.send(token);
 });
 
-function validate(req) {
+function validateAuth(req) {
   const schema = {
     email: Joi.string()
       .required()

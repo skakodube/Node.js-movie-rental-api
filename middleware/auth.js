@@ -6,7 +6,7 @@ module.exports = function(req, res, next) {
   if (!token) return res.status(401).send("Access denied. No token provided.");
 
   try {
-    const decoded = jwt.verify(token, process.env.vidly_jwtPrivateKey);
+    const decoded = jwt.verify(token, process.env.jwtPrivateKey);
     req.user = decoded;
     next();
   } catch (ex) {

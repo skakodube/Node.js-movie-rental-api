@@ -1,4 +1,7 @@
-const { Rental, validate } = require("../models/rental");
+const { Rental, validateRental } = require("../models/rental");
+const validate = require("../middleware/validate");
+const validateObjectId = require("../middleware/validateObjectId");
+const admin = require("../middleware/admin");
 const { Customer } = require("../models/customer");
 const { Movie } = require("../models/movie");
 const express = require("express");
@@ -9,15 +12,12 @@ const auth = require("../middleware/auth");
 
 Fawn.init(mongoose);
 
-router.get("/", auth, async (req, res) => {
+router.get("/", async (req, res) => {
   const rentals = await Rental.find().sort("-dateOut");
   res.send(rentals);
 });
 
-router.post("/", auth, async (req, res) => {
-  const { error } = validate(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
-
+router.post("/", [auth, validate(validateRental)], async (req, res) => {
   const customer = await Customer.findById(req.body.customerId);
   if (!customer) return res.status(400).send("Invalid Customer");
 
@@ -61,45 +61,46 @@ router.post("/", auth, async (req, res) => {
   res.send(rental);
 });
 
-router.put("/:id", auth, async (req, res) => {
-  const { error } = validate(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
+router.put(
+  "/:id",
+  [auth, validate(validateRental), validateObjectId],
+  async (req, res) => {
+    const customer = await Customer.findById(req.body.customerId);
+    if (!customer) return res.status(400).send("Invalid Customer");
 
-  const customer = await Customer.findById(req.body.customerId);
-  if (!customer) return res.status(400).send("Invalid Customer");
+    const movie = await Movie.findById(req.body.movieId);
+    if (!movie) return res.status(400).send("Invalid Movie");
 
-  const movie = await Movie.findById(req.body.movieId);
-  if (!movie) return res.status(400).send("Invalid Movie");
-
-  const rental = await Rental.findByIdAndUpdate(
-    req.params.id,
-    {
-      customer: {
-        name: customer.name,
-        isGold: customer.isGold,
-        phone: customer.phone
+    const rental = await Rental.findByIdAndUpdate(
+      req.params.id,
+      {
+        customer: {
+          name: customer.name,
+          isGold: customer.isGold,
+          phone: customer.phone
+        },
+        movie: {
+          title: movie.title,
+          dailyRentalRate: movie.dailyRentalRate
+        },
+        dateOut: req.body.dateOut,
+        dateReturned: req.body.dateReturned,
+        rentalFee: req.body.rentalFee
       },
-      movie: {
-        title: movie.title,
-        dailyRentalRate: movie.dailyRentalRate
-      },
-      dateOut: req.body.dateOut,
-      dateReturned: req.body.dateReturned,
-      rentalFee: req.body.rentalFee
-    },
-    { new: true }
-  );
+      { new: true }
+    );
 
-  res.send(rental);
-});
+    res.send(rental);
+  }
+);
 
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", [auth, admin, validateObjectId], async (req, res) => {
   const rental = await Rental.findByIdAndRemove(req.params.id);
   if (!rental) return res.status(400).send("Invalid rental");
   res.send(rental);
 });
 
-router.get("/:id", auth, async (req, res) => {
+router.get("/:id", [auth, validateObjectId], async (req, res) => {
   const rental = await Rental.findById(req.params.id);
   if (!rental) return res.status(400).send("Invalid rental");
   res.send(rental);

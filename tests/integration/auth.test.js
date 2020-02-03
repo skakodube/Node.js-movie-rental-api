@@ -8,7 +8,7 @@ describe("auth middleware", () => {
   });
 
   afterEach(async () => {
-    server.close();
+    await server.close();
     await Genre.remove({});
   });
 
@@ -21,11 +21,12 @@ describe("auth middleware", () => {
   };
 
   beforeEach(() => {
-    token = new User().generateAuthToken();
+    token = new User({ isAdmin: true }).generateAuthToken();
   });
 
   it("should return 401 if no token is provided", async () => {
     token = "";
+
     const res = await exec();
     expect(res.status).toBe(401);
   });

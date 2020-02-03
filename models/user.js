@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.generateAuthToken = function() {
   const token = jwt.sign(
     { _id: this._id, isAdmin: this.isAdmin },
-    process.env.vidly_jwtPrivateKey
+    process.env.jwtPrivateKey
   );
   return token;
 };
@@ -56,4 +56,4 @@ function validateUser(user) {
 }
 
 exports.User = User;
-exports.validate = validateUser;
+exports.validateUser = validateUser;

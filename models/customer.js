@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Joi = require("joi");
 
 const Customer = mongoose.model(
   "Customer",
@@ -39,4 +40,4 @@ function validateCustomer(customer) {
 }
 
 exports.Customer = Customer;
-exports.validate = validateCustomer;
+exports.validateCustomer = validateCustomer;

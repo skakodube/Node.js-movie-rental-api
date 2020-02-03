@@ -1,25 +1,37 @@
-let server;
+const mongoose = require("mongoose");
 const request = require("supertest");
 const { Genre } = require("../../models/genre");
 const { User } = require("../../models/user");
+let server;
 
 describe("/api/genres", () => {
   beforeEach(() => {
     server = require("../../index");
   });
-  afterEach(() => {
-    server.close();
-    Genre.remove({});
+  afterEach(async () => {
+    await server.close();
+    await Genre.remove({});
   });
+  let token;
 
   describe("GET /", () => {
+    const exec = async () => {
+      return await request(server)
+        .get("/api/genres")
+        .set("x-auth-token", token);
+    };
+
+    beforeEach(() => {
+      token = new User({ isAdmin: true }).generateAuthToken();
+    });
+
     it("should return all genres", async () => {
       await Genre.collection.insertMany([
         { name: "genre1" },
         { name: "genre2" }
       ]);
 
-      const res = await request(server).get("/api/genres");
+      const res = await exec();
       expect(res.status).toBe(200);
       expect(res.body.some(g => g.name === "genre1")).toBeTruthy();
       expect(res.body.some(g => g.name === "genre2")).toBeTruthy();
@@ -61,7 +73,7 @@ describe("/api/genres", () => {
     };
 
     beforeEach(() => {
-      token = new User().generateAuthToken();
+      token = new User({ isAdmin: true }).generateAuthToken();
       name = "genre1";
     });
 
@@ -90,7 +102,7 @@ describe("/api/genres", () => {
     });
 
     it("should save genre if it is valid", async () => {
-      const res = await exec();
+      await exec();
 
       const genre = await Genre.find({ name: "genre1" });
       expect(genre).not.toBeNull();
